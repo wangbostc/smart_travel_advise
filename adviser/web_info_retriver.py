@@ -85,7 +85,7 @@ def transform_html_content(html_content: Document) -> Document:
     )
     return docs_transformed[0]
 
-def get_smart_traverl_doc_for_advice(
+def get_smart_traveler_doc_for_advice(
     user_query: str,
     chat_model: RunnableBinding,
     calling_functions: List[StructuredTool],
