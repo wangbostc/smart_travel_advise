@@ -64,7 +64,7 @@ def construct_query2url_chain(
     calling_tool: StructuredTool,
 ) -> RunnableSequence:
     """Construct the chain for getting the advice URL.
-    Leverage chat model tool calling to retrieve the advice URL in 
+    Leverage chat model tool calling to retrieve the advice URL in
     a more controlable way.
 
     Args:
