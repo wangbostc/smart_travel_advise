@@ -59,7 +59,7 @@ def get_url_for_travel_advice(loc_dict: Dict[str, str]) -> str:
     return f"https://www.smartraveller.gov.au/destinations/{region}/{country}"
 
 
-def construct_chain_for_getting_advice_url(
+def construct_query2url_chain(
     chat_model: RunnableBinding,
     calling_tool: StructuredTool,
 ) -> RunnableSequence:
@@ -93,7 +93,7 @@ def construct_chain_for_getting_advice_url(
     output_parser = JsonOutputKeyToolsParser(key_name=calling_tool.name)
     # here jsonoutputkeytoolsparsers will return a list of dict, we only need the first one
 
-    chain = (
+    query2url = (
         prompt
         | chat_model_with_tool
         | output_parser
@@ -101,7 +101,7 @@ def construct_chain_for_getting_advice_url(
         | RunnableLambda(get_url_for_travel_advice)
     )
 
-    return chain
+    return query2url
 
 
 def load_from_url(url: str) -> Document:
@@ -119,8 +119,8 @@ def transform_html_content(html_content: Document) -> Document:
     return docs_transformed[0]
 
 
-def construct_chain_for_advice_doc_from_url() -> Document:
+def construct_url2doc_chain() -> Document:
     """Get the advice information for model to giving user travel advice"""
 
-    chain = RunnableLambda(load_from_url) | RunnableLambda(transform_html_content)
-    return chain
+    url2doc_chain = RunnableLambda(load_from_url) | RunnableLambda(transform_html_content)
+    return url2doc_chain
