@@ -21,6 +21,16 @@ from adviser.utils import extract_content_from_text
 
 
 class TravelAdviceInput(BaseModel):
+    """
+    Represents the input data for generating travel advice prompt.
+
+    Args:
+        name (str): The name of the travel advice.
+        html_section (str): The HTML section of the travel advice. (for query it will just return the query)
+        html_section_start (Optional[str], optional): The start of the HTML section. Defaults to None.
+        html_section_end (Optional[str], optional): The end of the HTML section. Defaults to None.
+        html_section_length (Optional[int], optional): The length of the HTML section. Defaults to None.
+    """
     name: str
     html_section: str
     html_section_start: Optional[str] = None
@@ -29,12 +39,11 @@ class TravelAdviceInput(BaseModel):
 
 
 def define_information_input_variables() -> Dict[str, TravelAdviceInput]:
-    """Defines the input to prompt and how they should be extracted from the document.
-    methods to extract the information from the document.
-    position 0: where to look for the information in the document.
-    position 1:
-        - the metadata key to extract the information if position 0 is "metadata".
-        - the starting word to extract the information if position 0 is "page_content".
+    """Defines the input to prompt and how they should be extracted from the text document.
+
+    Returns:
+        Dict[str, TravelAdviceInput]: 
+            A dictionary containing the input variables for extracting information from the text document.
     """
     input_variables = {
         "title": TravelAdviceInput(name="title", html_section="metadata"),
@@ -91,6 +100,17 @@ def get_required_prompt_field(
 
 
 def get_required_prompt_fields(doc: Document, query: str) -> Dict[str, str]:
+    """
+    Retrieves the required prompt fields based on the given document and query.
+
+    Args:
+        doc (Document): The text document required to extract the information.
+        query (str): The query string (the original user query).
+
+    Returns:
+        Dict[str, str]: A dictionary containing the required prompt fields.
+
+    """
     input_variables = define_information_input_variables()
     return {
         key: get_required_prompt_field(value, doc, query)
@@ -99,6 +119,7 @@ def get_required_prompt_fields(doc: Document, query: str) -> Dict[str, str]:
 
 
 def create_prompt_template_for_travel_advice() -> PromptTemplate:
+    """Creates a prompt template for generating travel advice."""
     template = """ 
         Given the following inputs:
         
@@ -213,6 +234,16 @@ def create_prompt_template_for_travel_advice() -> PromptTemplate:
 def create_prompt_for_travel_advice_response(
     fields_dict: Dict[str, Union[Document, Dict[str, str]]]
 ) -> RunnableSequence:
+    """
+    Creates a prompt for generating a travel advice response.
+
+    Args:
+        fields_dict (Dict[str, Union[Document, Dict[str, str]]]): A dictionary containing the fields required for generating the prompt.
+        the keys are the field names and the values are the corresponding values.
+        
+    Returns:
+        RunnableSequence: The generated prompt for travel advice response.
+    """
     required_fields = get_required_prompt_fields(**fields_dict)
 
     prompt_template = create_prompt_template_for_travel_advice()
@@ -221,8 +252,18 @@ def create_prompt_for_travel_advice_response(
 
 
 def construct_doc2advice_chain(chat_model: BaseChatModel):
-    """Construct the chain takes in a dictionary of doc (support information)
-    and the original query provided by user."""
+    """
+    Construct the chain that takes in a dictionary of doc (support information)
+    and the original query provided by the user. The chain will output the final advice.
+
+    Parameters:
+        chat_model (BaseChatModel): The chat model used in the chain. 
+        It should be a model that does not have a tool binding to avoid unnecessary tool calling.
+
+    Returns:
+        RunnableLambda: The constructed doc2advice_chain.
+
+    """
     doc2advice_chain = (
         RunnableLambda(create_prompt_for_travel_advice_response)
         | chat_model
@@ -233,6 +274,16 @@ def construct_doc2advice_chain(chat_model: BaseChatModel):
 
 
 def construct_query2advice_chain(chat_model: BaseChatModel):
+    """
+    Constructs a end to end query to advice chain for the given chat model.
+    Parameters:
+        chat_model (BaseChatModel): The chat model to be used for constructing the chain.
+        this model should not have tool binding to avoid unnecessary tool calling.
+        
+    Returns:
+        RunnableParallel: The query to advice chain.
+    """
+    
     query2url_chain = construct_query2url_chain(
         chat_model=chat_model, calling_tool=advice_whether_safe_to_travel
     )
