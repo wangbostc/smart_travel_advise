@@ -122,5 +122,7 @@ def transform_html_content(html_content: Document) -> Document:
 def construct_url2doc_chain() -> Document:
     """Get the advice information for model to giving user travel advice"""
 
-    url2doc_chain = RunnableLambda(load_from_url) | RunnableLambda(transform_html_content)
+    url2doc_chain = RunnableLambda(load_from_url) | RunnableLambda(
+        transform_html_content
+    )
     return url2doc_chain

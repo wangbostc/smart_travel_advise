@@ -5,7 +5,12 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents.base import Document
-from langchain_core.runnables import RunnableSequence, RunnableLambda, RunnableParallel, RunnablePassthrough
+from langchain_core.runnables import (
+    RunnableSequence,
+    RunnableLambda,
+    RunnableParallel,
+    RunnablePassthrough,
+)
 
 from adviser.adviser_support_info_retriver import (
     advice_whether_safe_to_travel,
@@ -14,13 +19,15 @@ from adviser.adviser_support_info_retriver import (
 )
 from adviser.utils import extract_content_from_text
 
+
 class TravelAdviceInput(BaseModel):
     name: str
     html_section: str
-    html_section_start: Optional[str]=None
-    html_section_end: Optional[str]=None
-    html_section_length: Optional[int]=None
-    
+    html_section_start: Optional[str] = None
+    html_section_end: Optional[str] = None
+    html_section_length: Optional[int] = None
+
+
 def define_information_input_variables() -> Dict[str, TravelAdviceInput]:
     """Defines the input to prompt and how they should be extracted from the document.
     methods to extract the information from the document.
@@ -30,20 +37,22 @@ def define_information_input_variables() -> Dict[str, TravelAdviceInput]:
         - the starting word to extract the information if position 0 is "page_content".
     """
     input_variables = {
-        "title": TravelAdviceInput(name='title', 
-                                   html_section='metadata'),
-        "description": TravelAdviceInput(name='description', 
-                                         html_section='metadata'),
-        "latest_update": TravelAdviceInput(name='latest_update', 
-                                           html_section="page_content", 
-                                           html_section_start="Latest update", 
-                                           html_section_end="Download", 
-                                           html_section_length=800),
-        "advice_levels": TravelAdviceInput(name="advice_levels",
-                                           html_section="page_content", 
-                                           html_section_start="Advice levels", 
-                                           html_section_end="Overview", 
-                                           html_section_length=500),
+        "title": TravelAdviceInput(name="title", html_section="metadata"),
+        "description": TravelAdviceInput(name="description", html_section="metadata"),
+        "latest_update": TravelAdviceInput(
+            name="latest_update",
+            html_section="page_content",
+            html_section_start="Latest update",
+            html_section_end="Download",
+            html_section_length=800,
+        ),
+        "advice_levels": TravelAdviceInput(
+            name="advice_levels",
+            html_section="page_content",
+            html_section_start="Advice levels",
+            html_section_end="Overview",
+            html_section_length=500,
+        ),
         "query": TravelAdviceInput(name="query", html_section="query"),
     }
 
@@ -66,7 +75,7 @@ def get_required_prompt_field(
         str: the retrieved information.
     """
     match input_variable.html_section:
-        case  "query":
+        case "query":
             return query
         case "metadata":
             return doc.metadata.get(input_variable.name, "")
@@ -214,10 +223,12 @@ def create_prompt_for_travel_advice_response(
 def construct_doc2advice_chain(chat_model: BaseChatModel):
     """Construct the chain takes in a dictionary of doc (support information)
     and the original query provided by user."""
-    doc2advice_chain = (RunnableLambda(create_prompt_for_travel_advice_response)
+    doc2advice_chain = (
+        RunnableLambda(create_prompt_for_travel_advice_response)
         | chat_model
-        | StrOutputParser())
-    
+        | StrOutputParser()
+    )
+
     return doc2advice_chain
 
 

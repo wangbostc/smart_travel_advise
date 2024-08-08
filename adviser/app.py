@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from adviser.config import OPENAI_API_KEY
 from adviser.advise_model import construct_query2advice_chain
 
-    
+
 def make_app():
     # initialize the llm chat model
     chat_model = ChatOpenAI(temperature=0, model="gpt-4o-mini-2024-07-18")
