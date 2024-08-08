@@ -1,8 +1,10 @@
 from unittest.mock import patch, Mock
 from typing import Dict
+
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
+
 from adviser.app import make_app
 
 
@@ -33,7 +35,7 @@ def test_get_travel_advice_endpoint_success(mock_query2advice_chain_constructor:
     assert response.json() == {'response': 'Good to go'}
     
 @patch("adviser.app.construct_query2advice_chain")
-def test_get_travel_advice_endpoint_invalid_input(mock_query2advice_chain_constructor, client):
+def test_get_travel_advice_endpoint_invalid_input(mock_query2advice_chain_constructor:Mock, client:TestClient):
     mock_query2advice_chain_constructor.return_value.invoke.return_value = "Good to go"
     # test no input
     response = client.post("/get_travel_advice", json={"query": ""})
@@ -41,7 +43,7 @@ def test_get_travel_advice_endpoint_invalid_input(mock_query2advice_chain_constr
     assert response.json() == {"detail": "Query is required"}
 
 @patch("adviser.app.construct_query2advice_chain")
-def test_handle_query_endpoint_exception(mock_query2advice_chain_constructor, client, query_data):
+def test_handle_query_endpoint_exception(mock_query2advice_chain_constructor:Mock, client:TestClient, query_data:Dict):
     mock_query2advice_chain_constructor.return_value.invoke.side_effect = Exception("Some error")
     
     response = client.post(

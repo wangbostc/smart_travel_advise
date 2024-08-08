@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 
 from pydantic import BaseModel
 from langchain_core.output_parsers import StrOutputParser
