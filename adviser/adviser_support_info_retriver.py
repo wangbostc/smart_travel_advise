@@ -51,7 +51,7 @@ def get_tool_calling_model(
 
 
 def get_url_for_travel_advice(loc_dict: Dict[str, str]) -> str:
-    """Get the url for travel advice"""
+    """Get the url for the travel advice, receives the location dictionary and returns the url"""
     region = loc_dict.get("region", "").lower()
     country = loc_dict.get("country", "").lower()
     if (not region) | (not country):
@@ -63,15 +63,16 @@ def construct_query2url_chain(
     chat_model: RunnableBinding,
     calling_tool: StructuredTool,
 ) -> RunnableSequence:
-    """Construct the chain for getting the advice url
-    Leverage chat model tool calling to retrieve the advice url
+    """Construct the chain for getting the advice URL.
+    Leverage chat model tool calling to retrieve the advice URL in 
+    a more controlable way.
 
     Args:
-        chat_model (RunnableBinding): the chat_model to
-        calling_tool (StructuredTool): _description_
+        chat_model (RunnableBinding): the chat_model with tool calling capability
+        calling_tool (StructuredTool): the tool used to get country and region parameters
 
     Returns:
-        RunnableSequence: _description_
+        RunnableSequence: the chain for getting the advice URL from user query
     """
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -91,7 +92,8 @@ def construct_query2url_chain(
     )
 
     output_parser = JsonOutputKeyToolsParser(key_name=calling_tool.name)
-    # here jsonoutputkeytoolsparsers will return a list of dict, we only need the first one
+    # here jsonoutputkeytoolsparsers will return a list of dict, we only need the first one (should be the only one)
+    # this lambda x:x[0] is used
 
     query2url = (
         prompt
@@ -105,7 +107,19 @@ def construct_query2url_chain(
 
 
 def load_from_url(url: str) -> Document:
-    """Get the advice for travel"""
+    """
+    Retrieve the advice HTML content for travel from the given URL.
+
+    Args:
+        url (str): The URL to retrieve the HTML content from.
+
+    Returns:
+        Document: The HTML content retrieved from the URL.
+
+    Raises:
+        Exception: If there is an error retrieving the web content.
+
+    """
     try:
         html_content = WebBaseLoader(url).load()
     except Exception as e:
@@ -114,14 +128,28 @@ def load_from_url(url: str) -> Document:
 
 
 def transform_html_content(html_content: Document) -> Document:
+    """
+    Transform the HTML content to text content.
+
+    Args:
+        html_content (Document): The HTML content to be transformed.
+
+    Returns:
+        Document: The transformed text content.
+
+    """
     html2text = Html2TextTransformer()
     docs_transformed = html2text.transform_documents(html_content)
     return docs_transformed[0]
 
 
 def construct_url2doc_chain() -> Document:
-    """Get the advice information for model to giving user travel advice"""
+    """
+    Construct the chain for retrieving the advice text document from a URL.
 
+    Returns:
+        Document: The constructed chain for retrieving the advice text document.
+    """
     url2doc_chain = RunnableLambda(load_from_url) | RunnableLambda(
         transform_html_content
     )
