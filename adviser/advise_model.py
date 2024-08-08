@@ -222,6 +222,8 @@ def create_prompt_template_for_travel_advice() -> PromptTemplate:
         
         Please generate the response, if information is not sufficient to complete the task do not make up 
         the answer, and response with "I do not have sufficient information to provide you with the advice."
+        If {query} is not related to travel or travel advice, respones with "Please only ask questions of 
+        travel advice related questions."
         """
 
     prompt_template = PromptTemplate(
