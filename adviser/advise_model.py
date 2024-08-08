@@ -31,6 +31,7 @@ class TravelAdviceInput(BaseModel):
         html_section_end (Optional[str], optional): The end of the HTML section. Defaults to None.
         html_section_length (Optional[int], optional): The length of the HTML section. Defaults to None.
     """
+
     name: str
     html_section: str
     html_section_start: Optional[str] = None
@@ -42,7 +43,7 @@ def define_information_input_variables() -> Dict[str, TravelAdviceInput]:
     """Defines the input to prompt and how they should be extracted from the text document.
 
     Returns:
-        Dict[str, TravelAdviceInput]: 
+        Dict[str, TravelAdviceInput]:
             A dictionary containing the input variables for extracting information from the text document.
     """
     input_variables = {
@@ -240,7 +241,7 @@ def create_prompt_for_travel_advice_response(
     Args:
         fields_dict (Dict[str, Union[Document, Dict[str, str]]]): A dictionary containing the fields required for generating the prompt.
         the keys are the field names and the values are the corresponding values.
-        
+
     Returns:
         RunnableSequence: The generated prompt for travel advice response.
     """
@@ -257,7 +258,7 @@ def construct_doc2advice_chain(chat_model: BaseChatModel):
     and the original query provided by the user. The chain will output the final advice.
 
     Parameters:
-        chat_model (BaseChatModel): The chat model used in the chain. 
+        chat_model (BaseChatModel): The chat model used in the chain.
         It should be a model that does not have a tool binding to avoid unnecessary tool calling.
 
     Returns:
@@ -279,11 +280,11 @@ def construct_query2advice_chain(chat_model: BaseChatModel):
     Parameters:
         chat_model (BaseChatModel): The chat model to be used for constructing the chain.
         this model should not have tool binding to avoid unnecessary tool calling.
-        
+
     Returns:
         RunnableParallel: The query to advice chain.
     """
-    
+
     query2url_chain = construct_query2url_chain(
         chat_model=chat_model, calling_tool=advice_whether_safe_to_travel
     )

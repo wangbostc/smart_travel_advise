@@ -8,13 +8,13 @@ def extract_content_from_text(
     extraction_length: int = 1000,
 ) -> str:
     """Extracts the content from a text document starting and ending with the specified search word.
-    
+
     Args:
         text (str): The text to extract content from.
         start_word (str): The word to start the extraction from. The search is case sensitive.
         end_word (str, optional): The word to end the extraction at. If not provided, the extraction will be of length extraction_length. Defaults to "".
         extraction_length (int, optional): The length of the extraction if end_word is not provided. Defaults to 1000.
-    
+
     Returns:
         str: The extracted content from the text.
     """
