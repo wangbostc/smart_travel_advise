@@ -77,6 +77,19 @@ def test_get_url_for_travel_advice(region: str, country: str):
     assert result == expected_url
 
 
+@pytest.mark.parametrize(
+    "region, country",
+    [
+        ("", "china"),
+        ("europe", ""),
+        ("", ""),
+    ],
+)
+def test_get_url_for_travel_advice_exception_handling(region: str, country: str):
+    with pytest.raises(ValueError, match="Please provide the region and country"):
+        get_url_for_travel_advice({"region": region, "country": country})
+
+
 @patch("langchain_community.document_loaders.WebBaseLoader.load")
 def test_load_from_url_success(mock_web_load: Mock, html_content_document: Document):
     url = "http://test.com"
