@@ -46,7 +46,7 @@ def get_tool_calling_model(
 ) -> RunnableBinding:
     """Bind the calling functions to the chat model, here the model is focused on function calling"""
     if not hasattr(chat_model, "bind_functions"):
-        raise ValueError("The provide chat model does not support binding functions. ")
+        raise ValueError("The provided chat model does not support binding functions.")
     return chat_model.bind_tools(tools=calling_tools, tool_choice="required")
 
 
