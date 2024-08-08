@@ -17,10 +17,22 @@ def make_app():
 
     @app.get("/health_check")
     async def get_health():
+        """health check endpoint"""
         return "ok"
 
     @app.post("/get_travel_advice")
     async def get_travel_advice(query: AppQuery):
+        """
+        Retrieves travel advice based on the provided query.
+        Args:
+            query (AppQuery): The query object containing the user's query.
+        Returns:
+            dict: A dictionary containing the response from the advice chain.
+        Raises:
+            HTTPException: If the query is empty, a HTTPException with status code 400 and detail message "Query is required" is raised.
+            HTTPException: If an exception occurs during the invocation of the advice chain, a HTTPException with status code 500 and the exception message is raised.
+        """
+
         query2advice_chain = construct_query2advice_chain(chat_model)
         user_query = query.query
         if not user_query:
