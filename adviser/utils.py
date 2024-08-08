@@ -7,10 +7,16 @@ def extract_content_from_text(
     end_word: Optional[str] = "",
     extraction_length: int = 1000,
 ) -> str:
-    """Extract the content from the smart traveler document starts with
-    the search word with lenghth of extraction_length from text. Be careful
-    that the search_word should be case sensitive, and only the first
-    match will be returned.
+    """Extracts the content from a text document starting and ending with the specified search word.
+    
+    Args:
+        text (str): The text to extract content from.
+        start_word (str): The word to start the extraction from. The search is case sensitive.
+        end_word (str, optional): The word to end the extraction at. If not provided, the extraction will be of length extraction_length. Defaults to "".
+        extraction_length (int, optional): The length of the extraction if end_word is not provided. Defaults to 1000.
+    
+    Returns:
+        str: The extracted content from the text.
     """
     start_position = text.find(start_word)
 
