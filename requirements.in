@@ -1,0 +1,8 @@
+html2text==2024.2.26
+langchain-core==0.2.27
+langchain-community==0.2.11
+langchain-openai==0.1.20
+fastapi==0.111.1
+pydantic==2.8.2
+pytest==8.3.2
+python-dotenv==1.0.1
