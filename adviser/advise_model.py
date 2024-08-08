@@ -1,13 +1,27 @@
 from typing import Dict, List, Optional, Union
-from langchain_openai.chat_models import ChatOpenAI
+
+from pydantic import BaseModel
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents.base import Document
-from langchain_core.runnables import RunnableSequence
+from langchain_core.runnables import RunnableSequence, RunnableLambda, RunnableParallel, RunnablePassthrough
+
+from adviser.adviser_support_info_retriver import (
+    advice_whether_safe_to_travel,
+    construct_query2url_chain,
+    construct_url2doc_chain,
+)
 from adviser.utils import extract_content_from_text
 
-
-def define_information_input_variables() -> Dict[str, List[str]]:
+class TravelAdviceInput(BaseModel):
+    name: str
+    html_section: str
+    html_section_start: Optional[str]=None
+    html_section_end: Optional[str]=None
+    html_section_length: Optional[int]=None
+    
+def define_information_input_variables() -> Dict[str, TravelAdviceInput]:
     """Defines the input to prompt and how they should be extracted from the document.
     methods to extract the information from the document.
     position 0: where to look for the information in the document.
@@ -16,20 +30,28 @@ def define_information_input_variables() -> Dict[str, List[str]]:
         - the starting word to extract the information if position 0 is "page_content".
     """
     input_variables = {
-        "title": ["metadata", "title"],
-        "description": ["metadata", "description"],
-        "latest_update": ["page_content", "Latest update", "Download", 800],
-        "advice_levels": ["page_content", "Advice levels", "Overview", 500],
-        "query": [
-            "query",
-        ],
+        "title": TravelAdviceInput(name='title', 
+                                   html_section='metadata'),
+        "description": TravelAdviceInput(name='description', 
+                                         html_section='metadata'),
+        "latest_update": TravelAdviceInput(name='latest_update', 
+                                           html_section="page_content", 
+                                           html_section_start="Latest update", 
+                                           html_section_end="Download", 
+                                           html_section_length=800),
+        "advice_levels": TravelAdviceInput(name="advice_levels",
+                                           html_section="page_content", 
+                                           html_section_start="Advice levels", 
+                                           html_section_end="Overview", 
+                                           html_section_length=500),
+        "query": TravelAdviceInput(name="query", html_section="query"),
     }
 
     return input_variables
 
 
 def get_required_prompt_field(
-    input_variable_retrieval: List[Union[str, int]], doc: Document, query: str
+    input_variable: TravelAdviceInput, doc: Document, query: str
 ) -> str:
     """The function to get the required prompt field from the document and user query.
 
@@ -43,19 +65,20 @@ def get_required_prompt_field(
     Returns:
         str: the retrieved information.
     """
-    if input_variable_retrieval[0] == "query":
-        return query
-    elif input_variable_retrieval[0] == "metadata":
-        return doc.metadata.get(input_variable_retrieval[1], "")
-    elif input_variable_retrieval[0] == "page_content":
-        return extract_content_from_text(
-            text=doc.page_content,
-            start_word=input_variable_retrieval[1],
-            end_word=input_variable_retrieval[2],
-            extraction_length=input_variable_retrieval[3],
-        )
-    else:
-        raise ValueError("The input variable retrieval is not supported")
+    match input_variable.html_section:
+        case  "query":
+            return query
+        case "metadata":
+            return doc.metadata.get(input_variable.name, "")
+        case "page_content":
+            return extract_content_from_text(
+                text=doc.page_content,
+                start_word=input_variable.html_section_start,
+                end_word=input_variable.html_section_end,
+                extraction_length=input_variable.html_section_length,
+            )
+        case _:
+            raise ValueError("The input variable retrieval is not supported")
 
 
 def get_required_prompt_fields(doc: Document, query: str) -> Dict[str, str]:
@@ -134,7 +157,29 @@ def create_prompt_template_for_travel_advice() -> PromptTemplate:
             "Reconsider Your Need to Travel" in Papua.
         Reasons:
             ongoing risk of terrorist attack.
-            
+        
+        Example 3:
+        
+        Inputs:
+        
+        `title`: "Indonesia Travel Advice & Safety | Smartraveller"
+        `description`: "Australian Government travel advice for Indonesia. Exercise a high degree of caution. Travel advice level YELLOW. 
+        Understand the risks, safety, laws and contacts."
+        `latest_update`: "The Bali Provincial Government has introduced a new tourist levy of IDR 150,000 per person to foreign tourists entering Bali. 
+        The tourist levy is separate from the e-Visa on Arrival or the Visa on Arrival. Cashless payments can be made online prior to travel or on arrival 
+        at designated payment counters at Bali's airport and seaport. See the Bali Provincial Government's official website for further information (see 
+        link in 'Travel' section below)."
+        `query`: "I would like to travel to Jakarta in Indonesia. Is it safe?"
+        
+        Output:
+        
+        Travel Safety Level: 
+            "Exercise a high degree of caution" in Indonesia overall.
+        Reasons:
+            ongoing risk of terrorist attack.
+       
+        Since no specific advice level for Jakarta is provided, the overall advice for Indonesia applies.
+        
         ===================================================================================================
         
         Please complete the task using following information:
@@ -164,3 +209,31 @@ def create_prompt_for_travel_advice_response(
     prompt_template = create_prompt_template_for_travel_advice()
     prompt = prompt_template.format(**required_fields)
     return prompt
+
+
+def construct_doc2advice_chain(chat_model: BaseChatModel):
+    """Construct the chain takes in a dictionary of doc (support information)
+    and the original query provided by user."""
+    doc2advice_chain = (RunnableLambda(create_prompt_for_travel_advice_response)
+        | chat_model
+        | StrOutputParser())
+    
+    return doc2advice_chain
+
+
+def construct_query2advice_chain(chat_model: BaseChatModel):
+    query2url_chain = construct_query2url_chain(
+        chat_model=chat_model, calling_tool=advice_whether_safe_to_travel
+    )
+    url2doc_chain = construct_url2doc_chain()
+    doc2advice_chain = construct_doc2advice_chain(chat_model)
+    query2advice_chain = (
+        RunnableParallel(
+            {
+                "doc": query2url_chain | url2doc_chain,
+                "query": RunnablePassthrough(),
+            }
+        )
+        | doc2advice_chain
+    )
+    return query2advice_chain
