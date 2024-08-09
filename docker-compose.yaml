@@ -8,9 +8,5 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
+    environment:
+      - OPENAI_API_KEY
