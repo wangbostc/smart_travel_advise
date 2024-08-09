@@ -1,5 +1,9 @@
 import pytest
-from adviser.utils import extract_content_from_text
+from adviser.utils import (
+    extract_content_from_text,
+    detect_injection,
+    INJECTION_PATTERNS,
+)
 
 
 @pytest.mark.parametrize(
@@ -12,9 +16,17 @@ from adviser.utils import extract_content_from_text
     ],
 )
 def test_extract_content_from_text(
-    text, start_word, end_word, extraction_length, expected
+    text: str, start_word: str, end_word: str, extraction_length: str, expected: str
 ):
     assert (
         extract_content_from_text(text, start_word, end_word, extraction_length)
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    "query",
+    INJECTION_PATTERNS,
+)
+def test_detect_injection(query: str):
+    assert detect_injection(query) == True
