@@ -66,15 +66,7 @@ def define_information_input_variables() -> Dict[str, TravelAdviceInput]:
 def get_required_prompt_field(
     input_variable: TravelAdviceInput, doc: Document, query: str
 ) -> str:
-    """The function to get the required prompt field from the document and user query.
-
-    Args:
-        input_variable_retrieve_method (List[Union[str, int]]): the method to retrieve the input variable.
-        doc (Document): the document to extract the information from.
-        query (str): the original user query.
-    Raises:
-        ValueError: if the keywords is not in current retrieval ["query", "metadata", "page_content"].
-    """
+    """The function to get the required prompt field from the document and user query."""
     match input_variable.html_section:
         case "query":
             return query
@@ -211,15 +203,7 @@ def construct_doc2advice_chain(chat_model: BaseChatModel):
 
 
 def construct_query2advice_chain(chat_model: BaseChatModel):
-    """
-    Constructs a end to end query to advice chain for the given chat model.
-    Parameters:
-        chat_model (BaseChatModel): The chat model to be used for constructing the chain.
-        this model should not have tool binding to avoid unnecessary tool calling.
-
-    Returns:
-        RunnableParallel: The query to advice chain.
-    """
+    """Constructs a end to end query to advice chain for the given chat model."""
 
     query2url_chain = construct_query2url_chain(chat_model)
     url2doc_chain = construct_url2doc_chain()
