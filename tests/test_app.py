@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 from typing import Dict
 
 import pytest
@@ -11,7 +11,8 @@ from adviser.config import INJECTION_PATTERNS
 
 # Create the FastAPI app instance
 @pytest.fixture
-def app():
+@patch("adviser.app.construct_query2advice_chain")
+def app(mock_chain_constructor: Mock):
     return make_app()
 
 
@@ -32,35 +33,17 @@ def test_health_check_endpoint(client: TestClient):
     assert response.json() == "ok"
 
 
-def test_set_api_key(client: TestClient):
-    # Test valid API key
-    response = client.post("/set_api_key", json={"key": "test-api-key"})
-    assert response.status_code == 200
-    assert response.json() == {"message": "API key sets up successfully"}
-
-    # Test missing API key
-    response = client.post("/set_api_key", json={"key": ""})
-    assert response.status_code == 400
-    assert response.json() == {"detail": "API key is required"}
-
-
 @patch("adviser.app.construct_query2advice_chain")
 def test_get_travel_advice_endpoint_success(
     mock_query2advice_chain_constructor: Mock, client: TestClient, query_data: Dict
 ):
-    client.post("/set_api_key", json={"key": "test-api-key"})
     mock_query2advice_chain_constructor.return_value.invoke.return_value = "Good to go"
     response = client.post("/get_travel_advice", json=query_data)
     assert response.status_code == 200
     assert response.json() == {"response": "Good to go"}
 
 
-@patch("adviser.app.construct_query2advice_chain")
-def test_get_travel_advice_endpoint_invalid_input(
-    mock_query2advice_chain_constructor: Mock, client: TestClient
-):
-    client.post("/set_api_key", json={"key": "test-api-key"})
-    mock_query2advice_chain_constructor.return_value.invoke.return_value = "Good to go"
+def test_get_travel_advice_endpoint_invalid_input(client: TestClient):
     # test no input
     response = client.post("/get_travel_advice", json={"query": ""})
     assert response.status_code == 400
@@ -72,24 +55,21 @@ def test_get_travel_advice_endpoint_invalid_input(
     INJECTION_PATTERNS,
 )
 def test_get_travel_advice_endpoint_prompt_injection(query: str, client: TestClient):
-    client.post("/set_api_key", json={"key": "test-api-key"})
     # test injection input
     response = client.post(
         "/get_travel_advice", json={"query": query + " travel advice"}
     )
-    assert response.status_code == 200
-    assert response.json() == {"response": "Plase don't try to inject commands."}
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Injection commands detected."}
 
 
 @patch("adviser.app.construct_query2advice_chain")
 def test_handle_query_endpoint_exception(
     mock_query2advice_chain_constructor: Mock, client: TestClient, query_data: Dict
 ):
-    client.post("/set_api_key", json={"key": "test-api-key"})
     mock_query2advice_chain_constructor.return_value.invoke.side_effect = Exception(
         "Some error"
     )
-
     response = client.post("/get_travel_advice", json=query_data)
     assert response.status_code == 500
     assert response.json() == {"detail": "Some error"}
