@@ -13,6 +13,10 @@ COPY . /app
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# set environment variables
+ENV AWS_ACCESS_KEY_ID=access_key_id
+ENV OPENAI_API_KEY=openai_api_key
+
 # Expose the port that the FastAPI app runs on
 EXPOSE 8000
 
