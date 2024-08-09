@@ -19,7 +19,7 @@ def make_app():
     @app.get("/health_check")
     async def get_health():
         """health check endpoint"""
-        return "ok"
+        return  {"status": "ok"}
 
     @app.post("/get_travel_advice")
     async def get_travel_advice(query: AppQuery):
