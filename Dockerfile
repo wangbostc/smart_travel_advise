@@ -18,7 +18,7 @@ ENV AWS_ACCESS_KEY_ID=access_key_id
 ENV OPENAI_API_KEY=openai_api_key
 
 # Expose the port that the FastAPI app runs on
-EXPOSE 8000
+EXPOSE 80
 
 # Command to run the FastAPI application using uvicorn
-CMD ["uvicorn", "adviser.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "adviser.app:app", "--host", "0.0.0.0", "--port", "80"]
