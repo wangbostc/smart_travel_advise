@@ -32,10 +32,23 @@ def test_health_check_endpoint(client: TestClient):
     assert response.json() == "ok"
 
 
+def test_set_api_key(client: TestClient):
+    # Test valid API key
+    response = client.post("/set_api_key", json={"key": "test-api-key"})
+    assert response.status_code == 200
+    assert response.json() == {"message": "API key sets up successfully"}
+
+    # Test missing API key
+    response = client.post("/set_api_key", json={"key": ""})
+    assert response.status_code == 400
+    assert response.json() == {"detail": "API key is required"}
+
+
 @patch("adviser.app.construct_query2advice_chain")
 def test_get_travel_advice_endpoint_success(
     mock_query2advice_chain_constructor: Mock, client: TestClient, query_data: Dict
 ):
+    client.post("/set_api_key", json={"key": "test-api-key"})
     mock_query2advice_chain_constructor.return_value.invoke.return_value = "Good to go"
     response = client.post("/get_travel_advice", json=query_data)
     assert response.status_code == 200
@@ -46,6 +59,7 @@ def test_get_travel_advice_endpoint_success(
 def test_get_travel_advice_endpoint_invalid_input(
     mock_query2advice_chain_constructor: Mock, client: TestClient
 ):
+    client.post("/set_api_key", json={"key": "test-api-key"})
     mock_query2advice_chain_constructor.return_value.invoke.return_value = "Good to go"
     # test no input
     response = client.post("/get_travel_advice", json={"query": ""})
@@ -58,7 +72,8 @@ def test_get_travel_advice_endpoint_invalid_input(
     INJECTION_PATTERNS,
 )
 def test_get_travel_advice_endpoint_prompt_injection(query: str, client: TestClient):
-    # test no input
+    client.post("/set_api_key", json={"key": "test-api-key"})
+    # test injection input
     response = client.post(
         "/get_travel_advice", json={"query": query + " travel advice"}
     )
@@ -70,6 +85,7 @@ def test_get_travel_advice_endpoint_prompt_injection(query: str, client: TestCli
 def test_handle_query_endpoint_exception(
     mock_query2advice_chain_constructor: Mock, client: TestClient, query_data: Dict
 ):
+    client.post("/set_api_key", json={"key": "test-api-key"})
     mock_query2advice_chain_constructor.return_value.invoke.side_effect = Exception(
         "Some error"
     )

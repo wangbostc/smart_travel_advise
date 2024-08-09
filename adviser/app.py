@@ -7,11 +7,14 @@ from adviser.utils import detect_injection
 
 
 def make_app():
-    # initialize the llm chat model
-    chat_model = ChatOpenAI(temperature=0, model="gpt-4o-mini-2024-07-18")
+    # In-memory storage for the API key
+    api_key_storage = {}
 
     class AppQuery(BaseModel):
         query: str
+
+    class APIKey(BaseModel):
+        key: str
 
     app = FastAPI()
 
@@ -19,6 +22,14 @@ def make_app():
     async def get_health():
         """health check endpoint"""
         return "ok"
+
+    @app.post("/set_api_key")
+    async def set_api_key(api_key: APIKey):
+        """set api key for chat model endpoint"""
+        if not api_key.key:
+            raise HTTPException(status_code=400, detail="API key is required")
+        api_key_storage["api_key"] = api_key.key
+        return {"message": "API key sets up successfully"}
 
     @app.post("/get_travel_advice")
     async def get_travel_advice(query: AppQuery):
@@ -29,9 +40,17 @@ def make_app():
         Returns:
             dict: A dictionary containing the response from the advice chain.
         Raises:
+            HTTPException: If API key is not set, a HTTPException with status code 500 and detail message "API key for chat model not initialized" is raised.
             HTTPException: If the query is empty, a HTTPException with status code 400 and detail message "Query is required" is raised.
             HTTPException: If an exception occurs during the invocation of the advice chain, a HTTPException with status code 500 and the exception message is raised.
         """
+        if not (api_key := api_key_storage.get("api_key", None)):
+            raise HTTPException(
+                status_code=500, detail="API key for chat model not initialized"
+            )
+        chat_model = ChatOpenAI(
+            temperature=0, model="gpt-4o-mini-2024-07-18", api_key=api_key
+        )
 
         user_query = query.query
         if not user_query:
