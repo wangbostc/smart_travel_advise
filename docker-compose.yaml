@@ -1,0 +1,16 @@
+services:
+  advisor_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: my-trip-advisor:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
