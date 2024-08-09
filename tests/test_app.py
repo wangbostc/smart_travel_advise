@@ -30,7 +30,7 @@ def query_data():
 def test_health_check_endpoint(client: TestClient):
     response = client.get("/health_check")
     assert response.status_code == 200
-    assert response.json() == "ok"
+    assert response.json() == {'status': 'ok'} 
 
 
 @patch("adviser.app.construct_query2advice_chain")
