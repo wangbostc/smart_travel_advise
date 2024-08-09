@@ -4,22 +4,14 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.document_transformers import Html2TextTransformer
 from langchain_core.documents.base import Document
 from langchain_core.language_models import BaseChatModel
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableBinding, RunnableSequence, RunnableLambda
-from langchain_core.tools import tool, StructuredTool
-from langchain_core.output_parsers.openai_tools import JsonOutputKeyToolsParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableSequence, RunnableLambda
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 
-class AdviceInput(BaseModel):
-    region: str = Field(
-        description="""
-    Lower case continent name that the search country resides in.
-    it should be in one of the following 6 regions:
-    [africa, americas, asia, europe, middle-east, pacific]
-    """
-    )
-    country: str = Field(
+class Country(BaseModel):
+    name: str = Field(
         description="""
     Lower case country full name that needs advice of trevel.
     if the country name have multiple words, connect the space with `-`.
@@ -29,97 +21,41 @@ class AdviceInput(BaseModel):
     2. People's Republic of China -> china
     """
     )
+    region: str = Field(
+        description="""
+    Lower case continent name that the search country resides in.
+    it should be in one of the following 6 regions:
+    [africa, americas, asia, europe, middle-east, pacific]
+    """
+    )
 
 
-@tool(args_schema=AdviceInput)
-def advice_whether_safe_to_travel(region: str, country: str) -> str:
-    """Check if it is safe to travel to the country of the region
-    Sometimes the user may ask about a specific sub-region of the country.
-    If a match of a sub-region is found, find the country of that sub-region first
-    then find the region that country belongs to."""
-    return "Exercise normal safety precautions"
-
-
-def get_tool_calling_model(
-    chat_model: BaseChatModel,
-    calling_tools: List[StructuredTool],
-) -> RunnableBinding:
-    """Bind the calling functions to the chat model, here the model is focused on function calling"""
-    if not hasattr(chat_model, "bind_functions"):
-        raise ValueError("The provided chat model does not support binding functions.")
-    return chat_model.bind_tools(tools=calling_tools, tool_choice="required")
-
-
-def get_url_for_travel_advice(loc_dict: Dict[str, str]) -> str:
+def get_url_for_travel_advice(country: Country) -> str:
     """Get the url for the travel advice, receives the location dictionary and returns the url"""
-    region = loc_dict.get("region", "").lower()
-    country = loc_dict.get("country", "").lower()
+    region = country.region
+    country = country.name
     if (not region) | (not country):
         raise ValueError("Please provide the region and country for travel advice")
     return f"https://www.smartraveller.gov.au/destinations/{region}/{country}"
 
 
-def construct_query2url_chain(
-    chat_model: RunnableBinding,
-    calling_tool: StructuredTool,
-) -> RunnableSequence:
-    """Construct the chain for getting the advice URL.
-    Leverage chat model tool calling to retrieve the advice URL in
-    a more controlable way.
-
-    Args:
-        chat_model (RunnableBinding): the chat_model with tool calling capability
-        calling_tool (StructuredTool): the tool used to get country and region parameters
-
-    Returns:
-        RunnableSequence: the chain for getting the advice URL from user query
-    """
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """You are a trip advisor which informs whether it is safe to travel to a certain country.
-                You have the knowledge of which country the user is asking and which region of this six regions:
-                [africa, americas, asia, europe, middle-east, pacific] the country resides in.
-                Be careful, Indonesia belongs to the asia region, not pacific.
-                """,
-            ),
-            ("user", "{query}"),
-        ]
-    )
-    chat_model_with_tool = get_tool_calling_model(
-        chat_model=chat_model, calling_tools=[calling_tool]
+def construct_query2url_chain(chat_model: BaseChatModel) -> RunnableSequence:
+    """Construct the chain for retrieving the URL for travel advice from a query."""
+    parser = PydanticOutputParser(pydantic_object=Country)
+    prompt = PromptTemplate(
+        template="""Find the country and its region that the user is asking for travel advice.
+        Be careful, Indonesia belongs to the asia region, not pacific.
+        {format_instructions}\n{query}""",
+        input_variables=["query"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
     )
 
-    output_parser = JsonOutputKeyToolsParser(key_name=calling_tool.name)
-    # here jsonoutputkeytoolsparsers will return a list of dict, we only need the first one (should be the only one)
-    # this lambda x:x[0] is used
-
-    query2url = (
-        prompt
-        | chat_model_with_tool
-        | output_parser
-        | RunnableLambda(lambda x: x[0])
-        | RunnableLambda(get_url_for_travel_advice)
-    )
-
+    query2url = prompt | chat_model | parser | RunnableLambda(get_url_for_travel_advice)
     return query2url
 
 
 def load_from_url(url: str) -> Document:
-    """
-    Retrieve the advice HTML content for travel from the given URL.
-
-    Args:
-        url (str): The URL to retrieve the HTML content from.
-
-    Returns:
-        Document: The HTML content retrieved from the URL.
-
-    Raises:
-        Exception: If there is an error retrieving the web content.
-
-    """
+    """Retrieve the advice HTML content for travel from the given URL."""
     try:
         html_content = WebBaseLoader(url).load()
     except Exception as e:
@@ -128,28 +64,14 @@ def load_from_url(url: str) -> Document:
 
 
 def transform_html_content(html_content: Document) -> Document:
-    """
-    Transform the HTML content to text content.
-
-    Args:
-        html_content (Document): The HTML content to be transformed.
-
-    Returns:
-        Document: The transformed text content.
-
-    """
+    """Transform the HTML content to text content."""
     html2text = Html2TextTransformer()
     docs_transformed = html2text.transform_documents(html_content)
     return docs_transformed[0]
 
 
 def construct_url2doc_chain() -> Document:
-    """
-    Construct the chain for retrieving the advice text document from a URL.
-
-    Returns:
-        Document: The constructed chain for retrieving the advice text document.
-    """
+    """Construct the chain for retrieving the advice text document from a URL."""
     url2doc_chain = RunnableLambda(load_from_url) | RunnableLambda(
         transform_html_content
     )
