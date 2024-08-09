@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
 from adviser.app import make_app
+from adviser.config import INJECTION_PATTERNS
 
 
 # Create the FastAPI app instance
@@ -50,6 +51,19 @@ def test_get_travel_advice_endpoint_invalid_input(
     response = client.post("/get_travel_advice", json={"query": ""})
     assert response.status_code == 400
     assert response.json() == {"detail": "Query is required"}
+
+
+@pytest.mark.parametrize(
+    "query",
+    INJECTION_PATTERNS,
+)
+def test_get_travel_advice_endpoint_prompt_injection(query: str, client: TestClient):
+    # test no input
+    response = client.post(
+        "/get_travel_advice", json={"query": query + " travel advice"}
+    )
+    assert response.status_code == 200
+    assert response.json() == {"response": "Plase don't try to inject commands."}
 
 
 @patch("adviser.app.construct_query2advice_chain")
