@@ -1,4 +1,5 @@
 from typing import Optional
+from adviser.config import INJECTION_PATTERNS
 
 
 def extract_content_from_text(
@@ -32,3 +33,8 @@ def extract_content_from_text(
         end_position = start_position + extraction_length
 
     return text[start_position:end_position]
+
+
+def detect_injection(query: str) -> bool:
+    """Simple heuristic to detect prompt injection attempts"""
+    return any(pattern in query.lower() for pattern in INJECTION_PATTERNS)

@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 
-from adviser.config import OPENAI_API_KEY
 from adviser.advise_model import construct_query2advice_chain
+from adviser.utils import detect_injection
 
 
 def make_app():
@@ -33,11 +33,13 @@ def make_app():
             HTTPException: If an exception occurs during the invocation of the advice chain, a HTTPException with status code 500 and the exception message is raised.
         """
 
-        query2advice_chain = construct_query2advice_chain(chat_model)
         user_query = query.query
         if not user_query:
             raise HTTPException(status_code=400, detail="Query is required")
+        if detect_injection(user_query):
+            return {"response": "Plase don't try to inject commands."}
         try:
+            query2advice_chain = construct_query2advice_chain(chat_model)
             response = query2advice_chain.invoke({"query": user_query})
             return {"response": response}
         except Exception as e:
