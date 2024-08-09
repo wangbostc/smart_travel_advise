@@ -4,14 +4,18 @@ FROM python:3.11-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
-COPY requirements.txt .
+# Install AWS CLI
+RUN apt-get update && apt-get install -y awscli
+
+# Copy the rest of the application code into the container
+COPY . /app
 
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code into the container
-COPY . .
+# set environment variables
+ENV AWS_ACCESS_KEY_ID=access_key_id
+ENV OPENAI_API_KEY=openai_api_key
 
 # Expose the port that the FastAPI app runs on
 EXPOSE 8000

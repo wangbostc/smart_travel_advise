@@ -24,7 +24,7 @@ def extract_content_from_text(
     if start_position == -1:
         return ""
 
-    if end_word == "":
+    if not end_word:
         return text[start_position : start_position + extraction_length]
 
     end_position = text.find(end_word, start_position)
