@@ -44,10 +44,10 @@ jobs:
 
     - name: Set up Docker Compose
       run: |
-        docker-compose up -d --build
+        docker compose up -d --build
         sleep 10 # Wait for services to be fully up
-        docker-compose down
+        docker compose down
 
     - name: Post Test Cleanup
       if: always()
-      run: docker-compose down
+      run: docker compose down
