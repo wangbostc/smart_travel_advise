@@ -93,5 +93,8 @@ Smart Travel Advise is a FastAPI-based application that provides travel advice b
 
 To run the tests, use the following command:
     ```sh
+
     pytest
+
     ```
+
