@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from langchain_openai import ChatOpenAI
 
 from adviser.advise_model import construct_query2advice_chain
@@ -7,16 +7,18 @@ from adviser.utils import detect_injection
 
 
 class AppQuery(BaseModel):
+    model_config = ConfigDict(extra="allow")
     query: str
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "examples": [
                 {
                     "query": "I would like to travel to Indonesia. Is it safe?",
                 }
             ]
         }
+    }
 
 
 def make_app():

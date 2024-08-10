@@ -47,7 +47,7 @@ def test_get_travel_advice_endpoint_invalid_input(client: TestClient):
     # test no input
     response = client.post("/get_travel_advice", json={"query": ""})
     assert response.status_code == 400
-    assert response.json() == {"detail": "Query is required"}
+    assert response.json() == {"detail": "Query is required."}
 
 
 @pytest.mark.parametrize(
