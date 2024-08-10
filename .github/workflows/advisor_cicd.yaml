@@ -40,7 +40,7 @@ jobs:
             TASK_DEFINITION=$(aws ecs describe-task-definition \
               --task-definition ${{ vars.TASK_DEF_FAMILY }} \
               --query 'taskDefinition.taskDefinitionArn' \
-              --output text)
+              --output text) 
             echo "::set-output name=task_definition_arn::$TASK_DEFINITION"
         
         - name: Update ECS service
