@@ -34,11 +34,3 @@ jobs:
             docker tag ${{ vars.ECR_IMAGE }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
             docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
             echo "image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest" >> $GITHUB_OUTPUT
-        - name: Fill in the new image ID in the Amazon ECS task definition
-          id: task-def
-          run: |
-            echo "::set-output name=taskdef::$(cat taskdef.json | jq --arg IMAGE ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest '.containerDefinitions[0].image = $IMAGE')"
-        - name: Deploy to ECS
-          uses: aws-actions/amazon-ecs-deploy-task@v1
-          run: |
-            aws ecs update-service --cluster my-trip-advisor --service my-trip-advisor-service --force-new-deployment
