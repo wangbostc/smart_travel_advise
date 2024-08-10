@@ -39,7 +39,6 @@ jobs:
           id: render-trip-advisor-container
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
-            task-definition-family: ${{ vars.TASK_DEF_FAMILY }}
+            task-definition: ${{ vars.TASK_DEF_FAMILY }}
             container-name: ${{ vars.ECS_CONTAINER }}
             image: ${{ steps.build-image.outputs.image }}
-            environment-variables: "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}"
