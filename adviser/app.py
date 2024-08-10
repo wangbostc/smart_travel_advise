@@ -14,14 +14,17 @@ def make_app():
     # initalize chain
     chat_model = ChatOpenAI(temperature=0, model="gpt-4o-mini-2024-07-18")
 
-    app = FastAPI()
+    app = FastAPI(title="Travel Advice API", 
+                  description="API for retrieving travel advice based on user queries.",
+                  version="0.0.1",
+                  docs_url="/",)
 
-    @app.get("/health_check")
+    @app.get("/health_check", tags=["health check"])
     async def get_health():
         """health check endpoint"""
         return {"status": "ok"}
 
-    @app.post("/get_travel_advice")
+    @app.post("/get_travel_advice", tags=["get trip advice"])
     async def get_travel_advice(query: AppQuery):
         """
         Retrieves travel advice based on the provided query.
