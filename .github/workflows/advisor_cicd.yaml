@@ -39,6 +39,6 @@ jobs:
           id: render-trip-advisor-container
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
-            task-definition: ${{ vars.TASK_DEF_FAMILY }}
+            task-definition-arn: arn:aws:ecs:${{ vars.AWS_REGION }}:{{ secrets.AWS_ACCOUNT_ID }}:task-definition/${{ vars.TASK_DEF_FAMILY }}:4
             container-name: ${{ vars.ECS_CONTAINER }}
             image: ${{ steps.build-image.outputs.image }}
