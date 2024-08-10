@@ -33,12 +33,20 @@ jobs:
             docker build -t ${{ vars.ECR_IMAGE }} .
             docker tag ${{ vars.ECR_IMAGE }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
             docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
-            echo "image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest" >> $GITHUB_OUTPUT
         
-        - name: Render Amazon ECS task definition
-          id: render-trip-advisor-container
-          uses: aws-actions/amazon-ecs-render-task-definition@v1
-          with:
-            task-definition-arn: arn:aws:ecs:${{ vars.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:task-definition/${{ vars.TASK_DEF_FAMILY }}:4
-            container-name: ${{ vars.ECS_CONTAINER }}
-            image: ${{ steps.build-image.outputs.image }}
+        - name: Get lastest revision of task definition
+          id: task-def
+          run: |
+            TASK_DEFINITION=$(aws ecs describe-task-definition \
+              --task-definition ${{ TASK_DEF_FAMILY }} \
+              --query 'taskDefinition.taskDefinitionArn' \
+              --output text)
+            echo "::set-output name=task_definition_arn::$TASK_DEFINITION"
+        
+        - name: Update ECS service
+          run: |
+            aws ecs update-service \
+              --cluster ${{ vars.ECS_CLUSTER }} \
+              --service ${{ vars.ECS_SERVICE }} \
+              --task-definition ${{ steps.task-def.outputs.task_definition_arn }} \
+              --force-new-deployment
