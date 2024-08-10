@@ -8,6 +8,12 @@ permissions:
   id-token: write # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
 
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  ECR_IMAGE: ${{ vars.ECR_IMAGE }}
 
 jobs:
   deploy:
@@ -21,14 +27,16 @@ jobs:
         - name: Configure AWS credentials
           uses: aws-actions/configure-aws-credentials@v4
           with:
-            role-to-assume: arn:aws:iam::022499036788:role/github-ecs
-            aws-region: ${{ vars.AWS_REGION }}
+            role-to-assume: arn:aws:iam::$AWS_ACCOUNT_ID:role/github-ecs
+            aws-region: $AWS_REGION
 
         - name: Login to Amazon ECR
-          run: aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin 022499036788.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+          run: aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-        - name: Build, tag, and push Docker image
+        - name: Build, tag, and push Docker image to ECR
+          id: build-image
           run: |
-            docker build -t ${{ vars.ECR_IMAGE }} .
-            docker tag ${{ vars.ECR_IMAGE }}:latest 022499036788.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
-            docker push 022499036788.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
+            docker build -t $ECR_IMAGE .
+            docker tag $ECR_IMAGE:latest $ECR_REPOSITORY/$ECR_IMAGE:latest
+            docker push $ECR_REPOSITORY/$ECR_IMAGE:latest
+            echo "image=$ECR_REPOSITORY/$ECR_IMAGE:latest" >> $GITHUB_OUTPUT
