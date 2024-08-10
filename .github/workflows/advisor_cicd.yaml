@@ -38,7 +38,7 @@ jobs:
           id: task-def
           run: |
             TASK_DEFINITION=$(aws ecs describe-task-definition \
-              --task-definition ${{ TASK_DEF_FAMILY }} \
+              --task-definition ${{ vars.TASK_DEF_FAMILY }} \
               --query 'taskDefinition.taskDefinitionArn' \
               --output text)
             echo "::set-output name=task_definition_arn::$TASK_DEFINITION"
