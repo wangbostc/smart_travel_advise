@@ -59,6 +59,7 @@ jobs:
   deploy:
       name: Deploy to ECS
       runs-on: ubuntu-latest
+      depends-on: test
 
       steps:
         - name: Checkout code
