@@ -14,7 +14,7 @@ env:
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
   ECR_IMAGE: ${{ vars.ECR_IMAGE }}
-
+ 
 jobs:
   deploy:
       name: Deploy to ECS
