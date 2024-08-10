@@ -78,5 +78,5 @@ jobs:
         - name: Build, tag, and push Docker image
           run: |
             docker build -t ${{ vars.ECR_IMAGE }} .
-            docker tag ${{ vars.ECR_IMAGE }}:latest ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
-            docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
+            docker tag ${{ vars.ECR_IMAGE }}:latest 022499036788.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
+            docker push 022499036788.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
