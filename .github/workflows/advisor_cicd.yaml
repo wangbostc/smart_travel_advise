@@ -26,6 +26,11 @@ jobs:
           - /var/run/docker.sock:/var/run/docker.sock
 
     steps:
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -88,7 +93,7 @@ jobs:
               --task-definition ${{ vars.TASK_DEF_FAMILY }} \
               --query 'taskDefinition.taskDefinitionArn' \
               --output text) 
-            echo "::set-output name=task_definition_arn::$TASK_DEFINITION"
+            echo "task_definition_arn=$TASK_DEFINITION" >> $GITHUB_OUTPUT
         
         - name: Update ECS service
           run: |
