@@ -8,13 +8,7 @@ permissions:
   id-token: write # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
 
-env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
-  ECR_IMAGE: ${{ vars.ECR_IMAGE }}
- 
+
 jobs:
   deploy:
       name: Deploy to ECS
@@ -27,16 +21,24 @@ jobs:
         - name: Configure AWS credentials
           uses: aws-actions/configure-aws-credentials@v4
           with:
-            role-to-assume: arn:aws:iam::$AWS_ACCOUNT_ID:role/github-ecs
-            aws-region: ${{ env.AWS_REGION }}
+            role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-ecs
+            aws-region: ${{ vars.AWS_REGION }}
 
         - name: Login to Amazon ECR
-          run: aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+          run: aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
 
         - name: Build, tag, and push Docker image to ECR
           id: build-image
           run: |
-            docker build -t $ECR_IMAGE .
-            docker tag $ECR_IMAGE:latest $ECR_REPOSITORY/$ECR_IMAGE:latest
-            docker push $ECR_REPOSITORY/$ECR_IMAGE:latest
-            echo "image=$ECR_REPOSITORY/$ECR_IMAGE:latest" >> $GITHUB_OUTPUT
+            docker build -t ${{ vars.ECR_IMAGE }} .
+            docker tag ${{ vars.ECR_IMAGE }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
+            docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
+            echo "image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest" >> $GITHUB_OUTPUT
+        - name: Fill in the new image ID in the Amazon ECS task definition
+          id: task-def
+          run: |
+            echo "::set-output name=taskdef::$(cat taskdef.json | jq --arg IMAGE ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest '.containerDefinitions[0].image = $IMAGE')"
+        - name: Deploy to ECS
+          uses: aws-actions/amazon-ecs-deploy-task@v1
+          run: |
+            aws ecs update-service --cluster my-trip-advisor --service my-trip-advisor-service --force-new-deployment
