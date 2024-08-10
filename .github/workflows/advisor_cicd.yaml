@@ -3,19 +3,13 @@ name: CI Pipeline
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
-env:
-  ECR_IMAGE: ${{ vars.ECR_IMAGE }}
-  AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
-  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
-  ECS_SERVICE: ${{ vars.ECS_SERVICE }}
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+
 jobs:
   test:
     name: Run Tests and Docker Compose
@@ -26,7 +20,7 @@ jobs:
         image: docker:20.10.8
         options: --privileged # Needed to run Docker inside Docker
         ports:
-          - 8000:8000
+          - 80:80
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
@@ -50,7 +44,7 @@ jobs:
 
       - name: Run Pytest
         env:
-          OPENAI_API_KEY: $OPENAI_API_KEY
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           pytest
 
@@ -74,16 +68,16 @@ jobs:
           uses: actions/checkout@v3
         
         - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@v2
+          uses: aws-actions/configure-aws-credentials@v4
           with:
-            aws-access-key-id: $AWS_ACCESS_KEY_ID
-            aws-secret-access-key: $AWS_SECRET_ACCESS_KEY
-            aws-region: $AWS_DEFAULT_REGION
+            role-to-assume: arn:aws:iam::022499036788:role/github-ecs
+            aws-region: ${{ vars.AWS_REGION }}
+
         - name: Login to Amazon ECR
-          run: aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+          run: aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
 
         - name: Build, tag, and push Docker image
           run: |
-            docker build -t $ECR_IMAGE .
-            docker tag $ECR_IMAGE:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_IMAGE:latest
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_IMAGE:latest
+            docker build -t ${{ vars.ECR_IMAGE }} .
+            docker tag ${{ vars.ECR_IMAGE }}:latest ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
+            docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_IMAGE }}:latest
