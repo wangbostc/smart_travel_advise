@@ -3,7 +3,8 @@ name: CI Pipeline
 on:
   push:
     branches: [ "main", 'dev' ]
-
+  pr:
+    branches: [ "main", 'dev' ]
 
 permissions:
   id-token: write # This is required for requesting the JWT
