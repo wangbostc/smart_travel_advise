@@ -5,15 +5,19 @@ import pytest
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
-from adviser.app import make_app
 from adviser.config import INJECTION_PATTERNS
+from adviser.make_app import make_app
+
+
+@pytest.fixture
+def mock_chain() -> MagicMock:
+    return MagicMock()
 
 
 # Create the FastAPI app instance
 @pytest.fixture
-@patch("adviser.app.construct_query2advice_chain")
-def app(mock_chain_constructor: Mock):
-    return make_app()
+def app(mock_chain: Mock):
+    return make_app(mock_chain)
 
 
 # Create a TestClient instance
@@ -33,11 +37,10 @@ def test_health_check_endpoint(client: TestClient):
     assert response.json() == {"status": "ok"}
 
 
-@patch("adviser.app.construct_query2advice_chain")
 def test_get_travel_advice_endpoint_success(
-    mock_query2advice_chain_constructor: Mock, client: TestClient, query_data: Dict
+    mock_chain: Mock, client: TestClient, query_data: Dict
 ):
-    mock_query2advice_chain_constructor.return_value.invoke.return_value = "Good to go"
+    mock_chain.invoke.return_value = "Good to go"
     response = client.post("/get_travel_advice", json=query_data)
     assert response.status_code == 200
     assert response.json() == {"response": "Good to go"}
@@ -63,13 +66,10 @@ def test_get_travel_advice_endpoint_prompt_injection(query: str, client: TestCli
     assert response.json() == {"detail": "Injection commands detected."}
 
 
-@patch("adviser.app.construct_query2advice_chain")
 def test_handle_query_endpoint_exception(
-    mock_query2advice_chain_constructor: Mock, client: TestClient, query_data: Dict
+    mock_chain: Mock, client: TestClient, query_data: Dict
 ):
-    mock_query2advice_chain_constructor.return_value.invoke.side_effect = Exception(
-        "Some error"
-    )
+    mock_chain.invoke.side_effect = Exception("Some error")
     response = client.post("/get_travel_advice", json=query_data)
     assert response.status_code == 500
     assert response.json() == {"detail": "Some error"}
