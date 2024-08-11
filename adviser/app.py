@@ -33,6 +33,7 @@ def make_app():
         The advice given is based on the information provided from https://www.smartraveller.gov.au/
         """,
         version="0.0.1",
+        docs_url="/",
         openapi_tags=[
             dict(
                 name="Get Trip Advice Endpoint",
